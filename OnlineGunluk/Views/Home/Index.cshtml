@@ -1,0 +1,230 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Günlük - Ana Sayfa</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet" />
+</head>
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Günlük</a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav"></ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <span id="email-span"></span>
+                            <span class="glyphicon glyphicon-user pull-right"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="#">
+                                    Şifre Değiştir
+                                    <span class="glyphicon glyphicon-cog pull-right"></span>
+                                </a>
+                            </li>
+                            <li class="divider"></li>
+                            <li>
+                                <a href="#" id="btnLogout">
+                                    Çıkış Yap
+                                    <span class="glyphicon glyphicon-log-out pull-right"></span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row containerRow">
+            <div class="col-md-3" id="menuPanel">
+                <h1>Günlüğüm</h1>
+                <a href="#" id="btnYeni" class="btn btn-primary btn-sm">
+                    <span class="glyphicon glyphicon-plus"></span> Yeni Not
+                </a>
+                <div class="menu">
+                    <ul id="notlarMenu" class="nav nav-pills nav-stacked"></ul>
+                </div>
+            </div>
+            <div class="col-md-9 icerikSutun">
+                <div id="icerikPanel">
+                    <div class="baslikContainer">
+                        <div class="txtBaslikContainer">
+                            <input type="text" id="txtBaslik" class="form-control" placeholder="Başlık Giriniz..." />
+                        </div>
+                    </div>
+                    <div class="icerikContainer">
+                        <div class="txtIcerikContainer">
+                            <textarea id="txtIcerik" class="form-control" placeholder="Notlarınızı Buraya Girebilirsiniz..."></textarea>
+                        </div>
+                    </div>
+                    <div class="buttonContainer">
+                        <div class="statusDiv text-success">
+                            <span id="statusMessage"></span>
+                        </div>
+                        <button class="btn btn-danger" id="btnSil">Sil</button>
+                        <button class="btn btn-success" id="btnKaydet">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/Scripts/jquery-3.3.1.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+
+    <script>
+        var loggedInEmail;
+        var headers = {};
+        var currentID = null;
+
+        if (!sessionStorage.tokenKey) {
+            window.location.href = "/Home/Login";
+        }
+        else {
+            headers.Authorization = "Bearer " + sessionStorage.tokenKey;
+            $.ajax({
+                url: "/api/Account/UserInfo",
+                headers: headers,
+                success: function (data) {
+                    loggedInEmail = data.Email;
+                    $("#email-span").html(loggedInEmail);
+                    loadContent();
+                },
+                error: function (xhr, status, error) {
+                    window.location.href = "/Home/Login"
+                }
+            });
+        }
+
+        function loadContent() {
+            $.ajax({
+                method: "get",
+                url: "/api/Main/GetBasliklar",
+                headers: headers,
+                success: function (data) {
+                    $.each(data, function (key, value) {
+                        menuLinkEkle(value.ID, value.Baslik);
+                    });
+                }
+            });
+        }
+
+        function menuLinkEkle(id, baslik) {
+            $("#notlarMenu").append('<li><a href="#" class="menuLink" data-not-id="' + id + '">' + baslik + '</a></li>');
+        }
+
+        $("#btnKaydet").click(function () {
+            if ($.trim($("#txtBaslik").val()) == "") {
+                alert("Lütfen başlık giriniz!");
+            }
+            else {
+                $.ajax({
+                    method: "post",
+                    url: "/api/Main/Save",
+                    dataType: "json",
+                    headers: headers,
+                    data: {
+                        ID: currentID,
+                        Baslik: $("#txtBaslik").val(),
+                        Icerik: $("#txtIcerik").val()
+                    },
+                    success: function (result) {
+                        if (currentID == null) {
+                            currentID = result.ID;
+                            menuLinkEkle(currentID, $("#txtBaslik").val());
+                        }
+                        else {
+                            $(".menuLink[data-not-id='" + currentID + "']").text($("#txtBaslik").val());
+                        }
+                        setActiveLink();
+                        $("#statusMessage").text(result.Mesaj);
+                        $("#statusMessage").fadeIn();
+                    }
+                });
+            }
+        });
+
+        function setActiveLink() {
+            $("#notlarMenu li").removeClass("active");
+
+            if (currentID) {
+                $(".menuLink[data-not-id='" + currentID + "']").parent("li").addClass("active");
+            }
+        }
+
+        $("#btnLogout").click(function () {
+            sessionStorage.removeItem("tokenKey");
+            window.location.href = "/Home/Login";
+        });
+
+        $("#btnYeni").click(function () {
+            currentID = null;
+            setActiveLink();
+            $("#txtBaslik").val("");
+            $("#txtIcerik").val("");
+        });
+
+        $("#notlarMenu").on("click", ".menuLink", menuLinkClick);
+
+        function menuLinkClick() {
+            currentID = $(this).attr("data-not-id");
+            setActiveLink();
+
+            $.ajax({
+                method: "get",
+                url: "/api/Main/GetNot/" + currentID,
+                headers: headers,
+                success: function (data) {
+                    $("#statusMessage").hide();
+                    $("#txtBaslik").val(data.Baslik);
+                    $("#txtIcerik").val(data.Icerik);
+                }
+            });
+        }
+
+        $("#btnSil").click(function () {
+            if (!currentID) {
+                return;
+            }
+
+            var silinecekLi = $(".menuLink[data-not-id='" + currentID + "']").parent("li");
+
+            $.ajax({
+                method: "post",
+                url: "/api/Main/Delete/" + currentID,
+                headers: headers,
+                success: function (result) {
+                    silinecekLi.remove();
+                    $("#statusMessage").text(result.Mesaj);
+                    $("#statusMessage").fadeIn();
+
+                    if (result.ID == currentID) {
+                        currentID = null;
+                        setActiveLink();
+                        $("#txtBaslik").val("");
+                        $("#txtIcerik").val("");
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

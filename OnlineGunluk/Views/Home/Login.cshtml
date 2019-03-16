@@ -1,0 +1,173 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Günlük - Giriş</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/Login.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <div class="panel panel-login">
+                    <div class="panel-heading">
+                        <div class="row">
+                            <div class="col-xs-6">
+                                <a href="#" class="active" id="login-form-link">
+                                    GİRİŞ
+                                </a>
+                            </div>
+                            <div class="col-xs-6">
+                                <a href="#" id="register-form-link">
+                                    KAYIT OL
+                                </a>
+                            </div>
+                        </div>
+                        <hr />
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <form id="login-form" action="#" method="post" role="form" style="display:block;">
+                                    <div class="alert alert-success hidden" id="login-success-alert-container">
+                                        Başarıyla giriş yaptınız. Şimdi günlüğe yönlendiriliyorsunuz...
+                                    </div>
+                                    <div class="alert alert-danger hidden" id="login-error-alert-container">
+                                        <ul id="login-error-list"></ul>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="text" name="username" id="username" tabindex="1" class="form-control" placeholder="Kullanıcı Adı" value="" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="password" name="password" id="password" tabindex="2" class="form-control" placeholder="Şifre" />
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-sm-6 col-sm-offset-3">
+                                                <input type="button" name="login-submit" id="login-submit" tabindex="4" class="form-control btn btn-login" value="GİRİŞ YAP" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                                <form id="register-form" action="#" method="post" role="form" style="display:none;">
+                                    <div class="alert alert-success hidden" id="register-success-alert-container">
+                                        Kaydınız başarıyla gerçekleşmiştir. Artık giriş yapabilirsiniz...
+                                    </div>
+                                    <div class="alert alert-danger hidden" id="register-error-alert-container">
+                                        <ul id="register-error-list"></ul>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="email" name="email" id="remail" tabindex="1" class="form-control" placeholder="e-mail Adresi" value="" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="password" name="password" id="rpassword" tabindex="2" class="form-control" placeholder="Şifre" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="password" name="confirm-password" id="rconfirm-password" tabindex="3" class="form-control" placeholder="Şifre Tekrar" />
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-sm-6 col-sm-offset-3">
+                                                <input type="button" name="register-submit" id="register-submit" tabindex="4" class="form-control btn btn-register" value="KAYIT OL" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/Scripts/jquery-3.3.1.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+
+    <script>
+        $(function () {
+            $("#login-submit").click(function () {
+                $.ajax({
+                    method: "post",
+                    url: "/Token",
+                    data: {
+                        "grant_type": "password",
+                        "username": $("#username").val(),
+                        "password": $("#password").val()
+                    },
+                    error: function (xhr, status, error) {
+                        var result = JSON.parse(xhr.responseText);
+                        $("#login-error-list").html("");
+                        $("#login-error-list").append('<li>' + result.error_description + '</li>');
+                        $("#login-error-alert-container").removeClass("hidden");
+                    },
+                    success: function (data, status, xhr) {
+                        var result = JSON.parse(xhr.responseText);
+                        $("#login-success-alert-container").removeClass("hidden");
+                        $("#login-error-alert-container").addClass("hidden");
+                        $("#username").val("");
+                        $("#password").val("");
+
+                        sessionStorage.tokenKey = result.access_token;
+                        setTimeout(function () {
+                            window.location.href = "/";
+                        }, 1000);
+                    }
+                });
+            });
+
+            $("#register-submit").click(function () {
+                $.ajax({
+                    method: "post",
+                    url: "/api/Account/Register",
+                    data: {
+                        "Email": $("#remail").val(),
+                        "Password": $("#rpassword").val(),
+                        "ConfirmPassword": $("#rconfirm-password").val()
+                    },
+                    error: function (xhr, status, error) {
+                        var result = JSON.parse(xhr.responseText);
+                        $("#register-error-list").html("");
+
+                        for (var k in result.ModelState) {
+                            $("#register-error-list").append('<li>' + result.ModelState[k] + '</li>');
+                        }
+
+                        $("#register-error-alert-container").removeClass("hidden");
+                        $("#register-success-alert-container").addClass("hidden");
+                    },
+                    success: function () {
+                        $("#register-error-alert-container").addClass("hidden");
+                        $("#register-success-alert-container").removeClass("hidden");
+                        $("#remail").val("");
+                        $("#rpassword").val("");
+                        $("#rconfirm-password").val("");
+                    }
+                });
+            });
+
+            $("#login-form-link").click(function (e) {
+                $("#login-form").delay(100).fadeIn(100);
+                $("#register-form").fadeOut(100);
+                $("#register-form-link").removeClass("active");
+                $(this).addClass("active");
+                e.preventDefault(); // bu komut tıklama event'ini es geçer, herhangi bir yere yönlenme der. Ayrıca url'in sonuna # işareti koymayı engeller...
+            });
+
+            $("#register-form-link").click(function (e) {
+                $("#register-form").delay(100).fadeIn(100);
+                $("#login-form").fadeOut(100);
+                $("#login-form-link").removeClass("active");
+                $(this).addClass("active");
+                e.preventDefault();
+            });
+        })
+    </script>
+</body>
+</html>
