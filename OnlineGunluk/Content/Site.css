@@ -1,8 +1,8 @@
 ﻿@import url('https://fonts.googleapis.com/css?family=Srisakdi');
 
 html, body, .container-fluid {
-    height: 100%;
-    font-family: 'Srisakdi', cursive;
+    height: 100%; 
+    font-family: Cambria, Cochin, Georgia, Times, Times New Roman, serif;
 }
 
 .containerRow {

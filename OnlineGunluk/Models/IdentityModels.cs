@@ -21,7 +21,7 @@ namespace OnlineGunluk.Models
 
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext() : base(@"server=ADEM-LENOVO\SQLEXPRESS;database=OnlineGunlukDb;uid=sa;pwd=123", throwIfV1Schema: false)
+        public ApplicationDbContext() : base(@"server=ADEMCOSKUN\SQLEXPRESS;database=OnlineGunlukDb;Trusted_Connection=True", throwIfV1Schema: false)
         {
         }
 
